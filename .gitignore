@@ -1,0 +1,8 @@
+# Never commit game data, saves or engine code
+*.gba
+*.sav
+*.g1rcart
+saves/
+engine/
+reference/
+data/generated/
