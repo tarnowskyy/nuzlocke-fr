@@ -5,14 +5,17 @@
 -- seed and a fixed name per decision (src/rng.lua), so reloading or playing
 -- in another order gives the same world.
 --
--- Wild: each map's encounter table is planned once: every species in it
--- gets one Gen 1 replacement (distinct within the map) of similar strength
--- (base stat total within 15%, widened only if too few fit) that is legal
--- at the highest level it appears there (src/species.lua); a lower-level
--- encounter of it gets an earlier evolution stage. Slot rates and levels
--- stay vanilla. Covers walking, surfing, fishing, Rock Smash and
--- Sweet Scent. Statics, gifts, legendaries, roamers and the Old Man's
--- tutorial are never touched.
+-- Wild: each map's encounter table is planned once, slot by slot: every
+-- slot gets its own Gen 1 replacement (distinct within the map), legal at
+-- the slot's top level (src/species.lua). With one catch per area, the
+-- first encounter is what counts, so how far a pick may stray depends on
+-- how often its slot comes up (TIERS below): everyday slots stay close to
+-- the vanilla Pokemon's strength, rare slots lean stronger and may be a
+-- few levels ahead of their normal evolution level -- sometimes a lucky
+-- find, never a legendary out of place. A lower-level encounter gets an
+-- earlier evolution stage. Slot rates and levels stay vanilla. Covers
+-- walking, surfing, fishing, Rock Smash and Sweet Scent. Statics, gifts,
+-- legendaries, roamers and the Old Man's tutorial are never touched.
 --
 -- Trainers (all of them, rival and bosses too): every party member gets a
 -- Gen 1 replacement the same way, keyed by trainer id and slot. The rival's
@@ -70,11 +73,24 @@ end
 
 -- ------------------------------------------------------------ choosing
 
-local function choose(stream, vanillaSp, level, used, forTrainer)
+-- Strength windows for trainers: base stat total within 15% of the vanilla
+-- Pokemon, widened to 25% and 40% only if fewer than MIN_POOL fit.
+local TRAINER_RULE = { trainer = true, relax = 0, bands = {} }
+for i, b in ipairs(BANDS) do TRAINER_RULE.bands[i] = { -b, b } end
+
+-- Highest legal level a pick may have: `level`, plus the rule's relax for
+-- anything that isn't legendary.
+local function legalFor(sp, level, rule)
+  return Species.legal(sp) <= level + (Species.LEGENDARY[sp] and 0 or (rule.relax or 0))
+end
+
+-- rule = { trainer = bool, relax = levels, bands = { {lo, hi}, ... } }:
+-- each band is the allowed BST change as a fraction of the vanilla one.
+local function choose(stream, vanillaSp, level, used, rule)
   local ref = Species.bst(vanillaSp) or 300
   local legal = {}
   for sp = 1, LAST do
-    if Species.legal(sp) <= level and not (forTrainer and NO_TRAINER[sp]) then
+    if legalFor(sp, level, rule) and not (rule.trainer and NO_TRAINER[sp]) then
       legal[#legal + 1] = sp
     end
   end
@@ -83,11 +99,12 @@ local function choose(stream, vanillaSp, level, used, forTrainer)
       if Species.isBase(sp) and not Species.LEGENDARY[sp] then legal[#legal + 1] = sp end
     end
   end
-  for _, band in ipairs(BANDS) do
+  for _, band in ipairs(rule.bands) do
     local pool = {}
     for _, sp in ipairs(legal) do
       local bst = Species.bst(sp)
-      if not used[sp] and bst and math.abs(bst - ref) <= ref * band then pool[#pool + 1] = sp end
+      local d = bst and bst - ref
+      if not used[sp] and d and d >= ref * band[1] and d <= ref * band[2] then pool[#pool + 1] = sp end
     end
     if #pool >= MIN_POOL then return stream:pick(pool) end
   end
@@ -224,6 +241,41 @@ Randomizer.starterLine = starterLine
 
 local METHODS = { "land", "grass", "water", "rocks", "fishing" }
 
+-- FireRed slot weights: core/game3/encounters.lua LAND_WEIGHTS/WATER_WEIGHTS
+-- (rocks use the water ones), fishing per rod from encounter_rules/frlg.lua
+-- (old rod slots 1-2, good rod 3-5, super rod 6-10).
+local WEIGHTS = {
+  land = { 20, 20, 10, 10, 10, 10, 5, 5, 4, 4, 1, 1 },
+  water = { 60, 30, 5, 4, 1 },
+  rocks = { 60, 30, 5, 4, 1 },
+  fishing = { 70, 30, 60, 20, 20, 40, 40, 15, 4, 1 },
+}
+WEIGHTS.grass = WEIGHTS.land
+
+-- How far a slot's pick may stray from its vanilla Pokemon depends on how
+-- often the slot comes up. The everyday slots stay close; the rarer the
+-- slot, the more it leans toward something stronger or more evolved, so a
+-- first encounter is sometimes a lucky find. relax = levels a pick may be
+-- ahead of its normal legal level (never for legendaries).
+local TIERS = {
+  { min = 20, name = "common", relax = 0,
+    bands = { { -0.20, 0.20 }, { -0.30, 0.30 }, { -0.45, 0.45 } } },
+  { min = 10, name = "varied", relax = 2,
+    bands = { { -0.15, 0.30 }, { -0.25, 0.40 }, { -0.40, 0.55 } } },
+  { min = 4, name = "uncommon", relax = 4,
+    bands = { { -0.10, 0.40 }, { -0.20, 0.50 }, { -0.35, 0.70 } } },
+  { min = 0, name = "rare", relax = 8,
+    bands = { { 0.00, 0.60 }, { -0.10, 0.75 }, { -0.30, 1.00 } } },
+}
+Randomizer.TIERS = TIERS
+
+local function tierFor(weight)
+  for _, tier in ipairs(TIERS) do
+    if weight >= tier.min then return tier end
+  end
+  return TIERS[#TIERS]
+end
+
 local function slotsOf(area)
   if type(area) ~= "table" then return nil end
   if type(area.slots) == "table" then return area.slots end
@@ -232,69 +284,106 @@ local function slotsOf(area)
   return nil
 end
 
+-- One map's plan: every slot of its encounter table (walking, surfing,
+-- Rock Smash, fishing) with its own replacement, distinct within the map
+-- where possible, judged at the slot's top level and by its tier.
 local function areaPlan(mapId)
   local c = plans()
   local key = tostring(mapId)
   local plan = c.areas[key]
   if plan then return plan end
-  plan = {}
-  local order, top = {}, {}
+  plan = { slots = {}, extra = {} }
   local Enc = E.req("src.core.game3.encounters")
   local ok, t = pcall(function() return Enc and Enc.tableFor and Enc.tableFor(mapId) end)
+  local stream = Rng.stream(c.seed, "wild:" .. key)
+  local used = {}
   if ok and type(t) == "table" then
     for _, method in ipairs(METHODS) do
-      for _, entry in ipairs(slotsOf(t[method]) or {}) do
-        if type(entry) == "table" then
-          local sp = Species.id(entry.species or entry[1])
-          local hi = tonumber(entry.maxLevel or entry.level or entry[2] or entry.minLevel) or 1
-          if sp and sp > 0 then
-            if not top[sp] then
-              order[#order + 1] = sp
-              top[sp] = hi
-            elseif hi > top[sp] then
-              top[sp] = hi
-            end
-          end
+      for i, entry in ipairs(slotsOf(t[method]) or {}) do
+        local sp = type(entry) == "table" and Species.id(entry.species or entry[1])
+        if sp and sp > 0 then
+          local lo = tonumber(entry.minLevel or entry.level or entry[2]) or 1
+          local hi = tonumber(entry.maxLevel or entry.level or entry[2]) or lo
+          if hi < lo then lo, hi = hi, lo end
+          local weight = (WEIGHTS[method] or {})[i] or 1
+          local tier = tierFor(weight)
+          local pick = choose(stream, sp, math.max(1, hi), used, tier)
+          used[pick] = true
+          plan.slots[#plan.slots + 1] = { vanilla = sp, lo = lo, hi = hi,
+            weight = weight, tier = tier, pick = pick }
         end
       end
     end
   end
-  local stream = Rng.stream(c.seed, "wild:" .. key)
-  local used = {}
-  for _, sp in ipairs(order) do
-    local pick = choose(stream, sp, math.max(1, top[sp]), used, false)
-    plan[sp] = pick
-    used[pick] = true
-  end
   c.areas[key] = plan
   return plan
 end
+Randomizer.areaPlan = areaPlan
 
--- The map's replacement for `vanillaSp`, at the evolution stage that is
--- legal at `level`: one species can span Lv 5-40 in a map (FireRed's surf
--- tables), so a low-level encounter gets the earlier stage of the same
--- replacement. A replacement with no earlier stage that is still too
--- strong for this level gets its own pick for that level instead.
+-- The engine rolled a vanilla species and level but not which slot it came
+-- from. Pick among the slots that could have produced it, in proportion to
+-- how likely each one was to (slot weight / its number of levels), which
+-- gives exactly the odds the game's own roll had.
+local function rollUnit()
+  if love and love.math and love.math.random then
+    local ok, v = pcall(love.math.random)
+    if ok and type(v) == "number" then return v end
+  end
+  return math.random()
+end
+
+local function slotFor(plan, vanillaSp, level)
+  local fits, total = {}, 0
+  for _, slot in ipairs(plan.slots) do
+    if slot.vanilla == vanillaSp and level >= slot.lo and level <= slot.hi then
+      local w = slot.weight / (slot.hi - slot.lo + 1)
+      fits[#fits + 1] = { slot = slot, w = w }
+      total = total + w
+    end
+  end
+  if #fits == 0 then return nil end
+  local r = rollUnit() * total
+  for _, f in ipairs(fits) do
+    r = r - f.w
+    if r < 0 then return f.slot end
+  end
+  return fits[#fits].slot
+end
+
+local COMMON = TIERS[1]
+
+-- The replacement for one encounter of `vanillaSp` at `level` on a map, at
+-- the evolution stage that is legal at `level` for its slot's tier: a slot
+-- can span Lv 5-40 (FireRed's surf tables), so a low-level encounter gets
+-- an earlier stage of the same pick. A pick with no earlier stage that is
+-- still too strong for this level gets its own pick for that level.
 function Randomizer.wildSpecies(mapId, vanillaSp, level)
   level = math.max(1, tonumber(level) or 1)
   local plan = areaPlan(mapId)
-  local sp = plan[vanillaSp]
-  if not sp then
+  local slot = slotFor(plan, vanillaSp, level)
+  local sp, tier
+  if slot then
+    sp, tier = slot.pick, slot.tier
+  else
     -- Not in this map's table (shouldn't happen): its own stream.
-    local stream = Rng.stream(plans().seed, "wild:" .. tostring(mapId) .. ":" .. tostring(vanillaSp))
-    sp = choose(stream, vanillaSp, level, {}, false)
-    plan[vanillaSp] = sp
+    sp = plan.extra[vanillaSp]
+    if not sp then
+      local stream = Rng.stream(plans().seed, "wild:" .. tostring(mapId) .. ":" .. tostring(vanillaSp))
+      sp = choose(stream, vanillaSp, level, {}, COMMON)
+      plan.extra[vanillaSp] = sp
+    end
+    tier = COMMON
   end
   for _ = 1, 3 do
-    if Species.legal(sp) <= level then return sp end
+    if legalFor(sp, level, tier) then return sp end
     local before = Species.pre(sp)
     if not before then break end
     sp = before
   end
-  if Species.legal(sp) <= level then return sp end
+  if legalFor(sp, level, tier) then return sp end
   local stream = Rng.stream(plans().seed,
     "wild:" .. tostring(mapId) .. ":" .. tostring(vanillaSp) .. ":L" .. level)
-  return choose(stream, vanillaSp, level, {}, false)
+  return choose(stream, vanillaSp, level, {}, tier)
 end
 
 local function currentMap()
@@ -360,7 +449,7 @@ local function randomizeTrainer(trainerId, party)
     for k, v in pairs(row) do copy[k] = v end
     local vanillaSp = Species.id(row.speciesId) or Species.id(row.species) or 16
     local level = tonumber(row.level) or 5
-    local sp = starterLine(vanillaSp, level) or choose(stream, vanillaSp, level, used, true)
+    local sp = starterLine(vanillaSp, level) or choose(stream, vanillaSp, level, used, TRAINER_RULE)
     used[sp] = true
     copy.species, copy.speciesId = sp, sp
     copy.moves = Randomizer.cleanMoves(sp, level, nil, opts)
