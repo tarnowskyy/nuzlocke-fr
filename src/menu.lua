@@ -1,4 +1,5 @@
--- START > NUZLOCKE: a status page for the run (seed, areas, catches, deaths).
+-- START > NUZLOCKE: a status page for the run (seed, level cap, areas,
+-- catches, deaths).
 -- Only added on a save that is a Nuzlocke run.
 
 local Menu = {}
@@ -14,6 +15,8 @@ local function summary()
   if not run.started then
     parts[#parts + 1] = "Rules start once PROF. OAK gives you POKE BALLS."
   end
+  local okCap, capLine = pcall(N.caps.summary)
+  if okCap and capLine then parts[#parts + 1] = capLine end
   parts[#parts + 1] = "Areas used: " .. tostring(run.areaCount or 0)
     .. "  Caught: " .. tostring(run.caught or 0)
   local order = run.deadOrder or {}

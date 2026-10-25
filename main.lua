@@ -14,7 +14,7 @@ local MODULE_DIR = "src/"
 -- Load order matters: later modules use the earlier ones through `N`.
 local MODULES = {
   "families", "engine", "text", "state", "prompt",
-  "catches", "permadeath", "shops", "menu",
+  "catches", "permadeath", "shops", "caps", "menu",
 }
 
 return function(mod)
@@ -63,6 +63,7 @@ return function(mod)
     N.state.tick(game)
     N.catches.tick(game)
     N.permadeath.tick(game)
+    N.caps.tick(game)
     N.prompt.tick(game)
   end
   mod.hooks:wrap("input.step", function(nextFn, game, dt)

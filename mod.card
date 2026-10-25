@@ -12,6 +12,8 @@ return {
       "a POKEMON that faints is dead: kept at 0 HP and can't be revived",
       "a full party wipe ends the run and returns to the title screen",
       "shops are closed and money can't be spent, except the Safari Zone fee",
+      "levels are capped by badges (15/22/26/31/45/45/49/52/61, 64 after Lance); EXP over the cap is banked",
+      "RARE CANDY can't be used on a POKEMON at the level cap",
     },
     added = {
       "a setup question after NEW GAME, and START > NUZLOCKE run status",

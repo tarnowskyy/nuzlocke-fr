@@ -116,6 +116,27 @@ function E.isRevive(itemId)
   return E.medicineKind(itemId) == "revive"
 end
 
+-- EXP a mon can still gain before it reaches `level` (0 if it is already
+-- there or above), from the game's own growth tables
+-- (core/game3/battle/experience.lua). nil if that module isn't available.
+function E.expRoom(mon, level)
+  local X = req("src.core.game3.battle.experience")
+  if not (X and X.expForLevel and type(mon) == "table") then return nil end
+  local ok, room = pcall(function()
+    if X.syncExpToLevel then X.syncExpToLevel(mon) end
+    if (tonumber(mon.level) or 1) >= level then return 0 end
+    return math.max(0, X.expForLevel(mon, level) - (tonumber(mon.exp) or 0))
+  end)
+  return ok and tonumber(room) or nil
+end
+
+function E.sound(id)
+  pcall(function()
+    local Audio, Se = req("src.core.game3.audio"), req("src.core.game3.se_ids")
+    if Audio and Se then Audio.playSe(Se.resolve(id)) end
+  end)
+end
+
 function E.getFlag(name)
   local C = req("src.mods.Gen3Compat")
   if not (C and C.getFlag) then return nil end

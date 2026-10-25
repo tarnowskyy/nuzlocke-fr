@@ -85,7 +85,7 @@ local function askSetup(run)
   askedThisBoot = true
   N.prompt.ask("NUZLOCKE FR|Start a Nuzlocke run on this save?|"
     .. "One catch per area, fainted POKEMON are dead, a full wipe ends the run, "
-    .. "and shops are closed.", function(yes)
+    .. "shops are closed, and levels are capped by badges.", function(yes)
       if run.state ~= "pending" then return end
       if yes then
         startRun(run)
