@@ -15,7 +15,7 @@ local MODULE_DIR = "src/"
 local MODULES = {
   "families", "engine", "text", "state", "prompt",
   "catches", "permadeath", "shops", "caps", "rng", "species",
-  "randomizer", "hms", "menu",
+  "randomizer", "difficulty", "hms", "menu",
 }
 
 return function(mod)

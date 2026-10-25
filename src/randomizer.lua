@@ -21,6 +21,8 @@
 -- Gen 1 replacement the same way, keyed by trainer id and slot. The rival's
 -- starter line becomes the randomized starter in the vanilla slot, so he
 -- always carries "his" starter. Moves are the new species' level-up moves.
+-- On a run with the difficulty rules, src/difficulty.lua also sets levels,
+-- evolution stage, better movesets and boss held items here.
 --
 -- Starters: three different families, unevolved, able to evolve, base
 -- stat total 250-330, no legendaries, and a damaging move at Lv 5. They
@@ -130,6 +132,12 @@ end
 
 local function sleepBlocked(move, opts)
   return SLEEP[move] and opts.limitSleep and opts.sleepTaken
+end
+
+-- For src/difficulty.lua's moveset picker: the same deathtrap rules.
+Randomizer.SLEEP = SLEEP
+function Randomizer.moveAllowed(move, level, opts)
+  return not banned(move, level, opts) and not sleepBlocked(move, opts)
 end
 
 -- The species' moves at `level` (or `moves`) without deathtrap moves, topped
@@ -439,20 +447,39 @@ Randomizer.patchStartWild = patchStartWild
 
 -- ------------------------------------------------------------ trainers
 
-local function randomizeTrainer(trainerId, party)
+-- With the difficulty rules on (src/difficulty.lua) the species is chosen
+-- for the trainer's new level, then evolved, given better moves and, for a
+-- boss's ace, a held item.
+local function randomizeTrainer(trainerId, party, trainerClass)
   local stream = Rng.stream(plans().seed, "trainer:" .. tostring(trainerId))
   local badges = N.caps.badgeCount()
   local opts = { wild = false, badges = badges, limitSleep = badges < 4 }
+  local D = N.difficulty
+  local plan = D.on() and D.plan(trainerClass, trainerId, party) or nil
   local used, out = {}, {}
   for i, row in ipairs(party) do
     local copy = {}
     for k, v in pairs(row) do copy[k] = v end
     local vanillaSp = Species.id(row.speciesId) or Species.id(row.species) or 16
-    local level = tonumber(row.level) or 5
-    local sp = starterLine(vanillaSp, level) or choose(stream, vanillaSp, level, used, TRAINER_RULE)
+    local level = plan and plan.levels[i] or tonumber(row.level) or 5
+    local sp = starterLine(vanillaSp, level)
+    if not sp then
+      sp = choose(stream, vanillaSp, level, used, TRAINER_RULE)
+      used[sp] = true
+      if plan then sp = D.evolve(sp, level, plan, trainerId, i) end
+    end
     used[sp] = true
-    copy.species, copy.speciesId = sp, sp
-    copy.moves = Randomizer.cleanMoves(sp, level, nil, opts)
+    copy.species, copy.speciesId, copy.level = sp, sp, level
+    if plan and (plan.boss or level >= 20) then
+      local moves, topType = D.bestMoves(sp, level, opts, plan)
+      copy.moves = moves
+      if i == plan.ace then
+        local item = D.heldItem(plan, topType, badges)
+        if item then copy.heldItem, copy.heldItemId = item, nil end
+      end
+    else
+      copy.moves = Randomizer.cleanMoves(sp, level, nil, opts)
+    end
     copy.moveIds, copy.pp, copy.maxPp = nil, nil, nil
     out[i] = copy
   end
@@ -541,7 +568,7 @@ function Randomizer.install(ctx)
   mod.hooks:wrap("trainer.party", function(nextFn, trainerClass, trainerId, party)
     local out = nextFn(trainerClass, trainerId, party)
     if not Randomizer.on() or type(out) ~= "table" or #out == 0 then return out end
-    local ok, result = pcall(randomizeTrainer, trainerId, out)
+    local ok, result = pcall(randomizeTrainer, trainerId, out, trainerClass)
     if ok and type(result) == "table" then return result end
     mod.log:error("trainer randomizer failed: %s", tostring(result))
     return out

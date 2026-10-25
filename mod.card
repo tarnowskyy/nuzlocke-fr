@@ -18,6 +18,7 @@ return {
       "wild and trainer POKEMON lose deathtrap moves (OHKO moves; early Self-Destruct, Sonic Boom, Dragon Rage, Super Fang; one sleep move per early team)",
       "trade evolutions happen at Lv 37; evolutions into Gen 2 species are blocked",
       "with the badge and the HM in the bag, a party POKEMON can use CUT, SURF, STRENGTH etc. even if nobody knows the move",
+      "trainers are tougher: +10% levels (never past the cap), gym leaders at the cap, Elite Four and Champion slightly above; smarter AI; better movesets; boss aces hold berries or type items",
     },
     added = {
       "a setup question after NEW GAME, and START > NUZLOCKE run status",

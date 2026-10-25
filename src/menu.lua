@@ -15,6 +15,9 @@ local function summary()
   if run.rando then
     parts[#parts + 1] = "Randomizer: starters, wild POKEMON and trainers (Gen 1)."
   end
+  if run.hard then
+    parts[#parts + 1] = "Trainers: tougher (levels, AI, moves, boss items)."
+  end
   if not run.started then
     parts[#parts + 1] = "Rules start once PROF. OAK gives you POKE BALLS."
   end
