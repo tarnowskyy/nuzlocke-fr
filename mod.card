@@ -21,7 +21,8 @@ return {
       "trainers are tougher: +10% levels (never past the cap), gym leaders at the cap, Elite Four and Champion slightly above; smarter AI; better movesets; boss aces hold berries or type items",
     },
     added = {
-      "a setup question after NEW GAME, and START > NUZLOCKE run status",
+      "a setup question after NEW GAME",
+      "START > NUZLOCKE: a full-screen run menu (seed, level cap and banked EXP, party, every area used and its catch, deaths)",
     },
   },
 }

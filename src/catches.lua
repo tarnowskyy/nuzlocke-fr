@@ -86,8 +86,8 @@ local function decide(ev)
     current = { battle = st, catchable = false, why = "dupe", key = key }
     return
   end
-  run.areas[key] = { species = species, status = "met" }
   run.areaCount = (run.areaCount or 0) + 1
+  run.areas[key] = { species = species, status = "met", n = run.areaCount }
   current = { battle = st, catchable = true, why = "first", key = key }
 end
 
