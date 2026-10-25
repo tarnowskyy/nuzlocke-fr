@@ -1,0 +1,23 @@
+{
+  "id": "nuzlocke_fr",
+  "name": "Nuzlocke FR",
+  "version": "0.1.0",
+  "api": 2,
+  "entry": "main.lua",
+  "profile": "content",
+  "category": "BALANCE",
+  "game_version": ">=0.3.96 <0.3.97",
+  "games": [
+    "firered"
+  ],
+  "priority": 100,
+  "affects_link": false,
+  "permissions": [
+    "engine_internals"
+  ],
+  "dependencies": [],
+  "optional_dependencies": [],
+  "conflicts": [],
+  "github": "tarnowskyy/nuzlocke-fr",
+  "description": "An enforced Nuzlocke for FireRed: one catch per area with dupes and shiny clauses, permadeath, run over on a wipe, and no shop purchases. Only active on saves started through its own setup question."
+}

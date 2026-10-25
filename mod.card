@@ -1,0 +1,20 @@
+-- Sharing metadata read by tooling and the mod manager's detail pane; never
+-- by the loader's merge.
+return {
+  summary = "An enforced Nuzlocke for FireRed. Only active on saves that "
+    .. "answer YES to its setup question after NEW GAME.",
+  author = "tarnowskyy",
+  contact = "https://github.com/tarnowskyy/nuzlocke-fr",
+  tags = { "nuzlocke", "challenge", "firered" },
+  differences = {
+    changed = {
+      "only the first wild encounter in each area can be caught (dupes and shiny clauses; statics and gifts are free)",
+      "a POKEMON that faints is dead: kept at 0 HP and can't be revived",
+      "a full party wipe ends the run and returns to the title screen",
+      "shops are closed and money can't be spent, except the Safari Zone fee",
+    },
+    added = {
+      "a setup question after NEW GAME, and START > NUZLOCKE run status",
+    },
+  },
+}
