@@ -3,8 +3,11 @@
 A [Gen1Recomp](https://github.com/bryanthaboi/gen1recomp) mod that turns
 Pokémon FireRed into an enforced, randomized, harder Nuzlocke.
 
-**Status:** in development (0.2.0: core Nuzlocke rules and level caps;
-randomizer and difficulty not built yet).
+**Status:** in development (0.3.0: core Nuzlocke rules, level caps and the
+seeded Gen-1-only randomizer; difficulty changes not built yet).
+
+The randomizer reads species data (base stats, evolutions, movesets) from
+your own game at runtime; the mod ships no game data.
 
 ## Planned rules
 - Randomized starters, wild encounters and trainers (Gen 1 species only), seeded per run

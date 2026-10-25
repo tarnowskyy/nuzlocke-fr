@@ -75,6 +75,7 @@ local function startRun(run)
   run.deadOrder = {}
   run.caught = 0
   run.over = false
+  run.rando = 1 -- randomizer version this run was started with (src/randomizer.lua)
   mod.log:info("Nuzlocke run started, seed %d", run.seed)
   N.prompt.say("Nuzlocke run started! Seed " .. tostring(run.seed) .. ".|"
     .. "The rules begin once PROF. OAK gives you your POKE BALLS. "
@@ -85,7 +86,8 @@ local function askSetup(run)
   askedThisBoot = true
   N.prompt.ask("NUZLOCKE FR|Start a Nuzlocke run on this save?|"
     .. "One catch per area, fainted POKEMON are dead, a full wipe ends the run, "
-    .. "shops are closed, and levels are capped by badges.", function(yes)
+    .. "shops are closed, and levels are capped by badges. "
+    .. "Starters, wild POKEMON and trainers are randomized (Gen 1 only).", function(yes)
       if run.state ~= "pending" then return end
       if yes then
         startRun(run)

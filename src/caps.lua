@@ -39,6 +39,8 @@ local function badgeCount()
   return n
 end
 
+Caps.badgeCount = badgeCount
+
 function Caps.current()
   local cap
   if E.getFlag("FLAG_SYS_GAME_CLEAR") then

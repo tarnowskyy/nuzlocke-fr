@@ -1,7 +1,7 @@
 {
   "id": "nuzlocke_fr",
   "name": "Nuzlocke FR",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "api": 2,
   "entry": "main.lua",
   "profile": "content",
@@ -19,5 +19,5 @@
   "optional_dependencies": [],
   "conflicts": [],
   "github": "tarnowskyy/nuzlocke-fr",
-  "description": "An enforced Nuzlocke for FireRed: one catch per area with dupes and shiny clauses, permadeath, run over on a wipe, no shop purchases, and badge-based level caps with banked EXP. Only active on saves started through its own setup question."
+  "description": "An enforced, randomized Nuzlocke for FireRed: seeded Gen-1-only starters, wild Pokemon and trainers; one catch per area with dupes and shiny clauses; permadeath; run over on a wipe; no shop purchases; badge-based level caps with banked EXP. Only active on saves started through its own setup question."
 }

@@ -14,6 +14,10 @@ return {
       "shops are closed and money can't be spent, except the Safari Zone fee",
       "levels are capped by badges (15/22/26/31/45/45/49/52/61, 64 after Lance); EXP over the cap is banked",
       "RARE CANDY can't be used on a POKEMON at the level cap",
+      "starters, wild POKEMON and all trainers are randomized from one seed per run (Gen 1 species only; statics and gifts stay vanilla)",
+      "wild and trainer POKEMON lose deathtrap moves (OHKO moves; early Self-Destruct, Sonic Boom, Dragon Rage, Super Fang; one sleep move per early team)",
+      "trade evolutions happen at Lv 37; evolutions into Gen 2 species are blocked",
+      "with the badge and the HM in the bag, a party POKEMON can use CUT, SURF, STRENGTH etc. even if nobody knows the move",
     },
     added = {
       "a setup question after NEW GAME, and START > NUZLOCKE run status",

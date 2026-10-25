@@ -14,7 +14,8 @@ local MODULE_DIR = "src/"
 -- Load order matters: later modules use the earlier ones through `N`.
 local MODULES = {
   "families", "engine", "text", "state", "prompt",
-  "catches", "permadeath", "shops", "caps", "menu",
+  "catches", "permadeath", "shops", "caps", "rng", "species",
+  "randomizer", "hms", "menu",
 }
 
 return function(mod)

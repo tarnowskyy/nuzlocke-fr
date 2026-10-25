@@ -12,6 +12,9 @@ local function summary()
   local parts = {}
   parts[#parts + 1] = "NUZLOCKE RUN  Seed " .. tostring(run.seed)
     .. (run.over and "  (OVER)" or "")
+  if run.rando then
+    parts[#parts + 1] = "Randomizer: starters, wild POKEMON and trainers (Gen 1)."
+  end
   if not run.started then
     parts[#parts + 1] = "Rules start once PROF. OAK gives you POKE BALLS."
   end
